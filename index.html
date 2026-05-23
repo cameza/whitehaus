@@ -1396,14 +1396,35 @@ let activeParties = new Set(['Buyer','Seller','Lawyer','Broker','Mortgage Broker
 let gdriveUrl = '';
 
 // ============================================================ UTILS
-function parseDate(s) { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function parseDate(s) {
+  if(!s) return new Date(NaN);
+  // Already YYYY-MM-DD
+  if(typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s.trim())) {
+    const [y,m,d] = s.trim().split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+  // Any other string or Date object — parse and reformat to local
+  const d = new Date(s);
+  if(isNaN(d)) return new Date(NaN);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function normDateStr(s) {
+  const d = parseDate(s);
+  if(isNaN(d)) return s;
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
 function fmtDate(s) {
   const d=parseDate(s);
+  if(isNaN(d)) return s||'—';
   return d.toLocaleDateString('en-CA',{month:'short',day:'numeric'});
 }
 function taskStatus(t) {
   if(t.done) return 'done';
   const d=parseDate(t.date);
+  if(isNaN(d)) return 'upcoming';
   if(d<TODAY) return 'overdue';
   if(d.toDateString()===TODAY.toDateString()) return 'today';
   return 'upcoming';
@@ -1903,7 +1924,7 @@ async function loadFromSheets() {
       tasks.forEach(t => { attachMap[t.id] = t.attachments||[]; });
       tasks = json.tasks.map(r => ({
         id: Number(r.id),
-        date: r.date,
+        date: normDateStr(r.date),
         party: r.party,
         title: r.title,
         done: r.done === '1' || r.done === true,

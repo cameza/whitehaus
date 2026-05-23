@@ -986,9 +986,9 @@ a { text-decoration: none; color: inherit; }
     </div>
   </div>
   <div class="topbar-right">
-    <div class="sync-status offline" id="sync-status" title="Google Sheets sync status">
+    <div class="sync-status syncing" id="sync-status" title="Google Sheets sync status">
       <div class="dot"></div>
-      <span id="sync-label">Not connected</span>
+      <span id="sync-label">Connecting...</span>
     </div>
     <div class="closing-badge" id="days-badge">
       <div class="dot"></div>
@@ -1001,7 +1001,7 @@ a { text-decoration: none; color: inherit; }
 </header>
 
 <!-- SETUP BANNER -->
-<div class="setup-banner" id="setup-banner">
+<div class="setup-banner hidden" id="setup-banner">
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
   <span><strong>Connect Google Sheets</strong> to save data and share with your wife. <a href="#" onclick="openSheetsSetup();return false">Set up now →</a></span>
   <button onclick="document.getElementById('setup-banner').classList.add('hidden')" style="margin-left:auto;color:var(--color-text-faint);font-size:var(--text-xs)">Dismiss</button>
@@ -1354,8 +1354,8 @@ a { text-decoration: none; color: inherit; }
 
 <script>
 // ============================================================ CONFIG
-// Paste your Google Apps Script Web App URL here after deployment
-const SCRIPT_URL = '';  // e.g. 'https://script.google.com/macros/s/ABC123/exec'
+// Script URL is persisted in localStorage — don't edit manually
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvhYgH83jT5sx3w62kqbyBILvZgLd1tj3LAl1j5Smp2Wh20xw787gH7T83l6OmSeBQaA/exec';
 
 // ============================================================ DATA
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
@@ -1815,7 +1815,7 @@ function deleteTask() {
 
 
 // ============================================================ GOOGLE SHEETS SYNC
-let scriptUrl = SCRIPT_URL;
+let scriptUrl = localStorage.getItem('whitehaus_script_url') || SCRIPT_URL; if(!localStorage.getItem('whitehaus_script_url')) localStorage.setItem('whitehaus_script_url', SCRIPT_URL);
 let syncTimeout = null;
 let lastSyncedHash = '';
 
@@ -1958,6 +1958,7 @@ function saveSheetsUrl() {
     showToast('Please paste a valid Apps Script URL'); return;
   }
   scriptUrl = url;
+  localStorage.setItem('whitehaus_script_url', url);
   closeModal('sheets-modal');
   loadFromSheets().then(ok => {
     if(ok) { renderTasks(); renderTimeline(); renderDocs(); }
@@ -1985,6 +1986,9 @@ function saveSheetsUrl() {
     badge.style.color = 'var(--color-text-muted)';
   }
 })();
+// URL is hardcoded — always hide setup banner
+document.getElementById('setup-banner').classList.add('hidden');
+
 // If script URL is already configured, load from Sheets first
 if(scriptUrl) {
   loadFromSheets().then(ok => {
